@@ -27,7 +27,7 @@ def init():
 		'3Psj6lPRdplQdeYfe8CgKzl9CEgFvrZlWrfm1LHZXg2dD7YEXW',
 		)
 
-		run(cur,client)
+		run(con,cur,client)
 
 	except sqlite3.Error, e:
 		print "Error %s:" % e.args[0]
@@ -37,9 +37,13 @@ def init():
 			con.commit()
 			con.close()
 
-def run(cur,client):
+# Take a blog, fetch N last post and find their sources (if they are reblogged).
+# Then add them to a queue.
+# Do this steps for all the items in the queue.
+def run(con,cur,client):
 	
 	while 1:
+		# Take first item in queue
 		cur.execute('SELECT blog_url FROM queue WHERE visited=0 limit(1)')
 		data = cur.fetchone()
 		
@@ -53,6 +57,8 @@ def run(cur,client):
 		
 		if 'blog' in posts:
 			print '[Fetched]',
+			
+			# Uncomment if you want to sampling from blog
 			#posts = client.posts('underweartuesday.tumblr.com',limit=1)
 			#sample_rate = 0.1; # percent
 			#total_post = posts['total_posts']
@@ -62,13 +68,14 @@ def run(cur,client):
 			for post in posts['posts']:
 				src_url = None
 
-				if not 'source_url' in post: # It isn't reblogged post
+				# If tt isn't reblogged post then set itself as source
+				if not 'source_url' in post:
 					src_url = posts['blog']['url']
 				else:
 					src_url = post['source_url']
 
+				# Add to reblogs table
 				src_url = urlparse(src_url)[1]
-
 				item = (post['reblog_key'],src_url,posts['blog']['url'])
 				cur.execute('INSERT INTO reblogs (reblog_key,source_url,blog) VALUES (?,?,?)',item)
 
@@ -82,6 +89,7 @@ def run(cur,client):
 		# Mark as visited
 		cur.execute('UPDATE queue SET visited=1 WHERE blog_url=?', (url,) )
 		print '[Marked]'
-
+		con.commit()
+		
 if __name__ == '__main__':
 	init()
