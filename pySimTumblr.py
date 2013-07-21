@@ -66,25 +66,28 @@ def run(con,cur,client):
 			#posts = client.posts('underweartuesday.tumblr.com',limit=sample_post)
 			
 			for post in posts['posts']:
-				src_url = None
+				try:
+					src_url = None
 
-				# If tt isn't reblogged post then set itself as source
-				if not 'source_url' in post:
-					src_url = posts['blog']['url']
-				else:
-					src_url = post['source_url']
+					# If tt isn't reblogged post then set itself as source
+					if not 'source_url' in post:
+						src_url = posts['blog']['url']
+					else:
+						src_url = post['source_url']
 
-				# Add to reblogs table
-				src_url = urlparse(src_url)[1]
-				item = (post['reblog_key'],src_url,posts['blog']['url'])
-				cur.execute('INSERT INTO reblogs (reblog_key,source_url,blog) VALUES (?,?,?)',item)
+					# Add to reblogs table
+					
+					src_url = urlparse(src_url)[1]
+					item = (post['reblog_key'],src_url,posts['blog']['url'])
+					cur.execute('INSERT INTO reblogs (reblog_key,source_url,blog) VALUES (?,?,?)',item)
 
-				# Add to queue if it dosn't exist
-				cur.execute('SELECT count(*) FROM queue WHERE blog_url=?', (src_url,) )
-				if cur.fetchone()[0] == 0:
-					cur.execute('INSERT INTO queue (blog_url,visited) VALUES (?,?)',(src_url,0))
-				
-				print '.',
+					# Add to queue if it dosn't exist
+					cur.execute('SELECT count(*) FROM queue WHERE blog_url=?', (src_url,) )
+					if cur.fetchone()[0] == 0:
+						cur.execute('INSERT INTO queue (blog_url,visited) VALUES (?,?)',(src_url,0))
+					print '.',
+				except:
+					print 'x',
 
 		# Mark as visited
 		cur.execute('UPDATE queue SET visited=1 WHERE blog_url=?', (url,) )
