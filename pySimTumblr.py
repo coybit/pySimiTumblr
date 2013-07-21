@@ -6,6 +6,7 @@ from urlparse import parse_qs
 import sqlite3
 import sys
 from urlparse import urlparse
+import numpy
 
 def init():
 	try:
@@ -27,7 +28,8 @@ def init():
 		'3Psj6lPRdplQdeYfe8CgKzl9CEgFvrZlWrfm1LHZXg2dD7YEXW',
 		)
 
-		run(con,cur,client)
+		#run(con,cur,client)
+		rank_PingPong(con,cur,client)
 
 	except sqlite3.Error, e:
 		print "Error %s:" % e.args[0]
@@ -78,7 +80,9 @@ def run(con,cur,client):
 					# Add to reblogs table
 					
 					src_url = urlparse(src_url)[1]
-					item = (post['reblog_key'],src_url,posts['blog']['url'])
+					#item = (post['reblog_key'],src_url,posts['blog']['url'])
+					#item = (post['reblog_key'],src_url,post['link_url'])
+					item = (post['reblog_key'],src_url,url)
 					cur.execute('INSERT INTO reblogs (reblog_key,source_url,blog) VALUES (?,?,?)',item)
 
 					# Add to queue if it dosn't exist
@@ -94,5 +98,60 @@ def run(con,cur,client):
 		print '[Marked]'
 		con.commit()
 		
+def rank_PingPong(con,cur,client):
+
+	blogs_list = []
+
+	#
+	print 'Creating blogs list ...',
+
+	cur.execute("SELECT * FROM queue WHERE visited=1")
+
+	while 1:
+		data = cur.fetchone()
+		if data == None:	break
+		blogs_list.append( data[0].lower() )
+
+	print len(blogs_list)
+
+	# 
+	print 'Creating matrix ...',
+
+	dim = len(blogs_list)
+	blog_src_matrix = numpy.zeros((dim, dim ),int)
+	
+	print '[OK]'
+
+	# 
+	print 'Filling matrix ...',
+
+	cur.execute("SELECT count(*) FROM reblogs")
+	total = cur.fetchone()
+
+	cur.execute("SELECT * FROM reblogs")
+
+	j = i = 0
+	while 1:
+		data = cur.fetchone()
+		if data == None:	break
+
+		src_url = data[1].lower()
+		blog_url = data[2].lower()
+		#print src_url, blog_url,
+
+		try:
+			src_index = blogs_list.index(urlparse(src_url)[1])
+			blog_index = blogs_list.index(urlparse(blog_url)[1])
+			#print src_index,blog_index
+		
+			blog_src_matrix[blog_index,src_index] = blog_src_matrix[blog_index,src_index] + 1
+		except:
+			j = j+1
+
+		i = i+1
+		print i,'/',total,' - ',j
+
+	print '[OK]'
+
 if __name__ == '__main__':
 	init()

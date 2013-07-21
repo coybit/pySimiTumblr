@@ -5,9 +5,10 @@
 python setup.py install
 ```
 
-2- Install httpretty package
+2- Install httpretty and numpy 
 ```bash
 pip install http://pypi.python.org/packages/source/h/httpretty/httpretty-0.5.5.tar.gz
+easy_install numpy
 ```
 Note: pip.exe is located in python27\scripts folder
 
