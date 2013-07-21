@@ -29,7 +29,7 @@ def init():
 		)
 
 		#run(con,cur,client)
-		rank_PingPong(con,cur,client)
+		rank_ReflectionAlgorithm(con,cur,client)
 
 	except sqlite3.Error, e:
 		print "Error %s:" % e.args[0]
@@ -98,7 +98,7 @@ def run(con,cur,client):
 		print '[Marked]'
 		con.commit()
 		
-def rank_PingPong(con,cur,client):
+def rank_ReflectionAlgorithm(con,cur,client):
 
 	blogs_list = []
 
@@ -137,21 +137,49 @@ def rank_PingPong(con,cur,client):
 
 		src_url = data[1].lower()
 		blog_url = data[2].lower()
+		#src_url = urlparse(src_url)[0]
+		blog_url = urlparse(blog_url)[1];
+
 		#print src_url, blog_url,
 
 		try:
-			src_index = blogs_list.index(urlparse(src_url)[1])
-			blog_index = blogs_list.index(urlparse(blog_url)[1])
-			#print src_index,blog_index
+			src_index = blogs_list.index(src_url)
+			blog_index = blogs_list.index(blog_url)
+			#print src_index,blog_index,src_index
 		
 			blog_src_matrix[blog_index,src_index] = blog_src_matrix[blog_index,src_index] + 1
 		except:
 			j = j+1
 
 		i = i+1
-		print i,'/',total,' - ',j
+		#print i,'/',total,' - ',j
 
 	print '[OK]'
+
+	#
+	#numpy.savetxt("blog_src_matrix.csv", blog_src_matrix, delimiter=",")
+
+	# 
+	fav_url = raw_input("Enter your fac url:")
+	fav_blog_index = blogs_list.index(urlparse(fav_url)[1]);
+	sources_vector = blog_src_matrix[fav_blog_index,:]
+
+	similarity_vector = blog_src_matrix.dot(sources_vector)
+
+	# Top 10 suggetion
+
+	for i in range(1,10):
+		maxIdx = -1
+		for idx in range(0,dim):
+			if 	idx!=fav_blog_index and ( maxIdx==-1 or similarity_vector[idx] > similarity_vector[maxIdx] ):
+				maxIdx = idx
+
+		print i, blogs_list[maxIdx], similarity_vector[maxIdx]
+		similarity_vector[maxIdx] = -1
+
+	#for idx in range(0,dim):
+	#	if blog_src_matrix[fav_blog_index,idx] != 0:
+	#		print blogs_list[idx]
 
 if __name__ == '__main__':
 	init()
