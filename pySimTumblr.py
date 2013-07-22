@@ -7,6 +7,7 @@ import sqlite3
 import sys
 from urlparse import urlparse
 import numpy
+import pygraphviz as pgv
 
 def init():
 	try:
@@ -28,8 +29,8 @@ def init():
 		'3Psj6lPRdplQdeYfe8CgKzl9CEgFvrZlWrfm1LHZXg2dD7YEXW',
 		)
 
-		#run(con,cur,client)
-		rank_ReflectionAlgorithm(con,cur,client)
+		run(con,cur,client)
+		#rank_ReflectionAlgorithm(con,cur,client)
 
 	except sqlite3.Error, e:
 		print "Error %s:" % e.args[0]
@@ -54,7 +55,7 @@ def run(con,cur,client):
 			
 		url = data[0]
 		
-		print url,
+		print 'blog',#url,
 		posts = client.posts(url,limit=20)
 		
 		if 'blog' in posts:
@@ -101,6 +102,7 @@ def run(con,cur,client):
 def rank_ReflectionAlgorithm(con,cur,client):
 
 	blogs_list = []
+	G=pgv.AGraph()
 
 	#
 	print 'Creating blogs list ...',
@@ -146,7 +148,9 @@ def rank_ReflectionAlgorithm(con,cur,client):
 			src_index = blogs_list.index(src_url)
 			blog_index = blogs_list.index(blog_url)
 			#print src_index,blog_index,src_index
-		
+			
+			G.add_edge(src_index,blog_index)
+
 			blog_src_matrix[blog_index,src_index] = blog_src_matrix[blog_index,src_index] + 1
 		except:
 			j = j+1
@@ -176,6 +180,10 @@ def rank_ReflectionAlgorithm(con,cur,client):
 
 		print i, blogs_list[maxIdx], similarity_vector[maxIdx]
 		similarity_vector[maxIdx] = -1
+
+	G.write('graph.dot')
+	G.layout()
+	G.draw('visualized.png')
 
 	#for idx in range(0,dim):
 	#	if blog_src_matrix[fav_blog_index,idx] != 0:
